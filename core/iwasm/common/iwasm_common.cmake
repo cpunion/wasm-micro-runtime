@@ -50,6 +50,12 @@ if (WAMR_DISABLE_APP_ENTRY EQUAL 1)
   list(REMOVE_ITEM c_source_all "${IWASM_COMMON_DIR}/wasm_application.c")
 endif ()
 
+# wasm_shared_memory.c implements the Threads/atomics runtime (shared linear
+# memory), which is only referenced when the shared-memory feature is enabled.
+if (NOT WAMR_BUILD_SHARED_MEMORY EQUAL 1)
+  list(REMOVE_ITEM c_source_all "${IWASM_COMMON_DIR}/wasm_shared_memory.c")
+endif ()
+
 if (CMAKE_OSX_ARCHITECTURES)
   string(TOLOWER "${CMAKE_OSX_ARCHITECTURES}" OSX_ARCHS)
 
@@ -97,7 +103,11 @@ elseif (WAMR_BUILD_TARGET STREQUAL "X86_64" OR WAMR_BUILD_TARGET STREQUAL "AMD_6
   endif ()
 elseif (WAMR_BUILD_TARGET STREQUAL "X86_32")
   if (WAMR_BUILD_PLATFORM STREQUAL "windows")
-    set (source_all ${c_source_all} ${IWASM_COMMON_DIR}/arch/invokeNative_ia32.asm)
+    if (MINGW)
+      set (source_all ${c_source_all} ${IWASM_COMMON_DIR}/arch/invokeNative_ia32.s)
+    else ()
+      set (source_all ${c_source_all} ${IWASM_COMMON_DIR}/arch/invokeNative_ia32.asm)
+    endif ()
   else ()
     set (source_all ${c_source_all} ${IWASM_COMMON_DIR}/arch/invokeNative_ia32.s)
   endif ()
@@ -126,6 +136,8 @@ elseif (WAMR_BUILD_TARGET MATCHES "AARCH64.*")
             INCLUDE_DIRECTORIES ""
             COMPILE_OPTIONS "/nologo"
         )
+      elseif (MINGW)
+        set (source_all ${c_source_all} ${IWASM_COMMON_DIR}/arch/invokeNative_aarch64.s)
       endif ()
     else ()
       set (source_all ${c_source_all} ${IWASM_COMMON_DIR}/arch/invokeNative_aarch64.s)
@@ -142,6 +154,8 @@ elseif (WAMR_BUILD_TARGET MATCHES "AARCH64.*")
             INCLUDE_DIRECTORIES ""
             COMPILE_OPTIONS "/nologo"
         )
+      elseif (MINGW)
+        set (source_all ${c_source_all} ${IWASM_COMMON_DIR}/arch/invokeNative_aarch64_simd.s)
       endif ()
     else ()
       set (source_all ${c_source_all} ${IWASM_COMMON_DIR}/arch/invokeNative_aarch64_simd.s)
@@ -161,3 +175,11 @@ endif ()
 
 set (IWASM_COMMON_SOURCE ${source_all})
 
+if (MINGW)
+  set_source_files_properties(
+    ${IWASM_COMMON_DIR}/arch/invokeNative_ia32.s
+    ${IWASM_COMMON_DIR}/arch/invokeNative_aarch64.s
+    ${IWASM_COMMON_DIR}/arch/invokeNative_aarch64_simd.s
+    PROPERTIES COMPILE_OPTIONS "-x;assembler-with-cpp"
+  )
+endif ()

@@ -29,10 +29,10 @@ unset(_unit_option)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 SET(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 17)
 
-#TODO: modularization me
 # Detect Hosting target info
 string(TOLOWER ${CMAKE_HOST_SYSTEM_NAME} WAMR_BUILD_PLATFORM)
 # Set WAMR_BUILD_TARGET, currently values supported:
@@ -131,6 +131,7 @@ set(UNIT_TEST_SUITES
   exception-handling
   running-modes
   mem-alloc
+  instruction-metering
 )
 foreach(unit_test_suite IN LISTS UNIT_TEST_SUITES)
   add_subdirectory(${unit_test_suite})
